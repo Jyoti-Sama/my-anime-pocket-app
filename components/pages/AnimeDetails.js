@@ -1,17 +1,19 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { FlatList, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { Dimensions, Image } from 'react-native';
 
 import { useSelector, useDispatch } from 'react-redux';
 
 import { animeInfoApi, animeRecomendationApi } from '../../apis/animeDetails/animeInfo';
+import { searchAnimeCharacterApi } from '../../apis/search/animeApi';
 import { setAnimeInfoID } from '../../redux/slicers/AnimeDetailsSlice';
+import PageBar from '../page_components/HomeComp/PageBar';
 
 const screenWidth = Dimensions.get('window').width;
 const screenHeight = Dimensions.get('window').height;
 
 
-function AnimeDetails({ closeAnimeDetails }) {
+function AnimeDetails({ closeAnimeDetails, isSearchEnable = false }) {
 
   const animeID = useSelector((state) => state.animeInfo.animeInfoID);
   const dispatch = useDispatch();
@@ -25,15 +27,31 @@ function AnimeDetails({ closeAnimeDetails }) {
     });
   }
 
+
+
   // console.log(animeID, "from redux");
 
   const [animeData, setAnimeData] = useState([]);
   const [recomemdedAnime, setRecomemdedAnime] = useState([]);
 
+  const [characters, setCharacters] = useState([]);
+  const [charactersPageInfo, setCharactersPageInfo] = useState([]);
+
   useEffect(() => {
     animeInfoApi(animeID)
       .then((data) => {
         setAnimeData([data.Media]);
+
+
+        if (isSearchEnable) {
+          searchAnimeCharacterApi(animeID)
+            .then(res => {
+              setCharacters(res.Media.characters.nodes)
+              setCharactersPageInfo([res.Media.characters.pageInfo])
+            })
+            .catch(err => console.log(err))
+        }
+
 
         animeRecomendationApi(animeID)
           .then((res) => { setRecomemdedAnime([res.Recommendation.mediaRecommendation]); console.log(res, "from reco") })
@@ -43,7 +61,10 @@ function AnimeDetails({ closeAnimeDetails }) {
       .catch(err => console.log(err))
   }, [animeID])
 
+  // debugging
   console.log(animeData)
+  console.log(characters)
+  console.log(charactersPageInfo)
 
   const dateConstructor = (date) => {
     console.log(date)
@@ -60,7 +81,7 @@ function AnimeDetails({ closeAnimeDetails }) {
   const nextEpisodeConstructor = (data) => {
 
     let episode = data.episode;
-    let airingAt = new Date(data.airingAt*1000);
+    let airingAt = new Date(data.airingAt * 1000);
 
     let date = `${airingAt.getDate()}`.length < 2 ? `0${airingAt.getDate()}` : airingAt.getDate();
     let month = `${airingAt.getMonth() + 1}`.length < 2 ? `0${airingAt.getMonth() + 1}` : `${airingAt.getMonth() + 1}`;
@@ -69,6 +90,45 @@ function AnimeDetails({ closeAnimeDetails }) {
 
     return `episode ${episode} releasing on ${airingAt}`;
 
+  }
+
+  // character render setup
+  const imageSize = 80;
+  const numColumns = 3;
+  const imageMargin = ((screenWidth / numColumns) - imageSize) / 2;
+
+  //
+  const openAnimeDetails = (id) => { console.log(id) }
+
+  const renderItem = ({ item }) => (
+    <TouchableOpacity onPress={() => openAnimeDetails(item.id)}>
+      <View
+        style={{ width: imageSize, margin: imageMargin }}
+        onPress={() => console.log("gg")}
+      >
+        <Image
+          source={{ uri: item.image.medium }}
+          style={{ height: 130, width: imageSize, borderRadius: 10 }}
+        />
+
+        <Text style={{ fontSize: 14, textAlign: "center", color: DarkTheme.description }}>
+          {item.name.full}
+        </Text>
+
+      </View>
+    </TouchableOpacity>
+  );
+
+  // character page handler
+  const pageHandler = (page) => {
+    console.log(page);
+
+    searchAnimeCharacterApi(animeID, page)
+      .then((res) => {
+        setCharacters(res.Media.characters.nodes)
+        setCharactersPageInfo([res.Media.characters.pageInfo])
+      })
+      .catch((err) => console.log(err));
   }
 
   return (
@@ -131,10 +191,41 @@ function AnimeDetails({ closeAnimeDetails }) {
                 <Text style={styles.duration}>end date  :  {animeData[0].endDate ? dateConstructor(animeData[0].endDate) : null}</Text>
 
 
-                <Text style={styles.seasonYear}>{animeData[0].nextAiringEpisode ? nextEpisodeConstructor(animeData[0].nextAiringEpisode): null}</Text>
+                <Text style={styles.seasonYear}>{animeData[0].nextAiringEpisode ? nextEpisodeConstructor(animeData[0].nextAiringEpisode) : null}</Text>
 
                 {animeData[0].genres.map((genre, index) => <Text key={index} style={styles.genre}>{genre}</Text>)}
               </View>
+
+              {/* extra search details */}
+              <View>
+                {isSearchEnable && characters.length > 0 ?
+                  (
+                    <>
+                      <Text style={[styles.description, { marginTop: 70, marginLeft: 20, }]}>Characters</Text>
+
+                      <View style={[{ position: "absolute", right: 10 },{ marginTop: 70 }]}>
+                        {
+                          charactersPageInfo.length > 0 ? <PageBar pageInfo={charactersPageInfo[0]} pageHandler={pageHandler} btnColor="white" /> : null
+                        }
+                      </View>
+
+
+                      <View style={[styles.trendContainer]}>
+                        <SafeAreaView style={styles.flatView}>
+                          <FlatList
+                            horizontal={true}
+                            data={characters}
+                            renderItem={renderItem}
+                            keyExtractor={(item) => item.id}
+                          />
+                        </SafeAreaView>
+                      </View>
+                    </>
+                  )
+                  :
+                  null}
+              </View>
+
 
               {/* recomendation */}
               <View>
@@ -144,7 +235,7 @@ function AnimeDetails({ closeAnimeDetails }) {
                 {recomemdedAnime.length > 0 ?
                   (
                     <>
-                      <Text style={[styles.description, { marginTop: 70, marginLeft: 20, }]}>Recomendation</Text>
+                      <Text style={[styles.description, { marginLeft: 20, }]}>Recomendation</Text>
                       <TouchableOpacity onPress={() => { dispatch(setAnimeInfoID(recomemdedAnime[0].id)); onPressTouch() }}>
                         <View
                           style={{ marginTop: 10, marginLeft: 20, marginBottom: 20, width: screenWidth / 3 - 20, justifyContent: "center" }}
@@ -171,6 +262,8 @@ function AnimeDetails({ closeAnimeDetails }) {
                     </>
                   ) : null}
               </View>
+
+
             </View>
             :
             null
@@ -282,7 +375,11 @@ const styles = StyleSheet.create({
     fontFamily: FontStyle.otherFamily,
     color: "#ffff80",
     marginBottom: 10,
-  }
+  },
+  trendContainer: {
+    width: "100%",
+    backgroundColor: "transparent"
+  },
 });
 
 export default AnimeDetails

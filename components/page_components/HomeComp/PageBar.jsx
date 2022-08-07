@@ -1,7 +1,7 @@
 import React from 'react'
 import { Text, TouchableOpacity, View } from 'react-native'
 
-function PageBar({pageInfo, pageHandler}) {
+function PageBar({pageInfo, pageHandler, btnColor = "black"}) {
     return (
         <View style={{ flexDirection: "row",  height: 30, right: 20 }}>
 
@@ -14,14 +14,14 @@ function PageBar({pageInfo, pageHandler}) {
                         (
                             <TouchableOpacity
                                 onPress={() => pageHandler(pageInfo.currentPage - 1)}>
-                                <Text>{"<"}</Text>
+                                <Text style={{color: btnColor}}>{"<"}</Text>
                             </TouchableOpacity>
                         )
                 }
                 {"   "}
             </Text>
 
-            <Text>{pageInfo.currentPage}</Text>
+            <Text style={{color: btnColor}}>{pageInfo.currentPage}</Text>
 
 
             <Text>
@@ -32,7 +32,7 @@ function PageBar({pageInfo, pageHandler}) {
                         (
                             <TouchableOpacity
                                 onPress={() => pageHandler(pageInfo.currentPage + 1)}>
-                                <Text>{">"}</Text>
+                                <Text style={{color: btnColor}}>{">"}</Text>
                             </TouchableOpacity>
                         )
                         :

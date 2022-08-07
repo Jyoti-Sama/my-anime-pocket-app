@@ -82,7 +82,7 @@ function Upcomming() {
 
                 <Text >Upcomming!</Text>
 
-                <View style={{ position: "absolute",  right: 10 }}>
+                <View style={{ position: "absolute", right: 10 }}>
                     {
                         pageInfo.length > 0 ? <PageBar pageInfo={pageInfo[0]} pageHandler={pageHandler} /> : null
                     }

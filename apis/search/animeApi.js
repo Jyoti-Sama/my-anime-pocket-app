@@ -113,7 +113,13 @@ export const searchAnimeCharacterApi = async (id, page = 1) => {
         query: `{
             Media(id: ${id}){
                 id
-                characters(page: ${page}, perPage: 5){
+                characters(page: ${page}, perPage: 10){
+                    pageInfo{
+                        currentPage
+                        hasNextPage
+                        total
+                        perPage
+                    }
                     nodes{
                         id
                         name{

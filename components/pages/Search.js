@@ -69,11 +69,11 @@ function Search() {
             ?
             null
             :
-            <AnimeDetails closeAnimeDetails={closeAnimeDetails} />
+            <AnimeDetails closeAnimeDetails={closeAnimeDetails} isSearchEnable={true} />
         }
 
       </Modal>
-      
+
 
       <View style={{ width: "100%", justifyContent: "space-between", flexDirection: "row", padding: 10 }}>
 
